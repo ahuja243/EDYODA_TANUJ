@@ -1,0 +1,42 @@
+Observation :-->
+
+Observed the Nodeport 31000 for Voting & 31001 for result. 
+I deleted voting app, nothing happened in frontend, backend new pod is spawned and it is running.No disturb.
+Then, I deleted Worker pod, nothing happened in frontend, backend new pod is spawned and it is running.
+After deleting the db pod, the result got reset and all the voting data got lost.Also it can be seen from the YAML file of DB  that the volume is pod volume which is there only till life time of pod.so when we deleted the pod the storage associated with it also got deleted.
+Now the voting data is lost, now redis has the existing data in place but that lies on different host than db pod.
+
+Question :HOW YOU MADE THE RESULT POD work. 
+-->
+1.Stateful Application can be integrated with Kubernetes (Robin, MongoDB)
+2. StatefulSets maintain data by preserving storage across pod restarts
+
+some commands:->
+root@ip-172-31-40-118:~# kubectl get svc
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+db           ClusterIP   10.99.173.52    <none>        5432/TCP         66s
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP          4m26s
+redis        ClusterIP   10.97.240.72    <none>        6379/TCP         65s
+result       NodePort    10.107.54.174   <none>        5001:31001/TCP   65s
+vote         NodePort    10.107.77.115   <none>        5000:31000/TCP   65s
+
+
+Voting  Processed by container ID vote-7d884dd585-5v5zk
+
+root@ip-172-31-40-118:~# root@ip-172-31-40-118:~# kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+db-58cc845644-vbvjm       1/1     Running   0          34s
+redis-6878558678-b4p7p    1/1     Running   0          34s
+result-86bc6f7b5d-2l569   1/1     Running   0          34s
+vote-7d884dd585-5v5zk     1/1     Running   0          34s
+worker-6fc5d5b668-gxm85   1/1     Running   0          34s
+
+root@ip-172-31-40-118:~/example-voting-app/k8s-specifications# kubectl delete pods db-58cc845644-vbvjm
+pod "db-58cc845644-vbvjm" deleted
+root@ip-172-31-40-118:~/example-voting-app/k8s-specifications# kubectl get pods
+NAME                      READY   STATUS    RESTARTS      AGE
+db-58cc845644-kz87s       1/1     Running   0             42s
+redis-6878558678-b4p7p    1/1     Running   0             17m
+result-86bc6f7b5d-2l569   1/1     Running   1 (12s ago)   17m
+vote-7d884dd585-n96z8     1/1     Running   0             10m
+worker-6fc5d5b668-bk8q5   1/1     Running   1 (12s ago)   5m24
